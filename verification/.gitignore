@@ -1,0 +1,8 @@
+tools/
+audit/
+.lake/
+*.olean
+*.ilean
+*.trace
+__pycache__/
+*.py[cod]

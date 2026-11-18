@@ -1,0 +1,708 @@
+\documentclass[UTF8,11pt,a4paper]{ctexart}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+\title{单点种子、二元补入算法：\\精确 $1-1/e$ 保证与抽象 RAM 三次界}
+\author{LINHAI LU}
+\date{2026年11月13日工作稿}
+
+\begin{document}
+\maketitle
+
+
+
+\begin{abstract}
+
+本文研究单调次模函数在单背包约束下的价值预言机算法。S2R 枚举一个可行单点种子，沿可行边际密度贪心路径考察各真实前缀，并允许至多两个元素补入。本文给出精确 $1-e^{-1}$ 近似保证；在本文定义的精确实数单位成本 RAM 模型中，当 $n\ge1$ 时，价值查询数至多 $n^3$，辅助操作数至多 $141n^3$，峰值工作空间至多 $66n^2$ 个抽象字。Lean 形式化状态说明列明当前联合定理及其核查范围。预言机内部开销、数值位复杂度、整集合序列化和 Lean 求值器堆不计入这些资源界。
+
+\end{abstract}
+
+\section*{研究背景与已有工作}
+
+单调次模函数的边际递减性质使贪心选择有可分析的收益。
+Nemhauser 等人~\cite{nemhauser1978} 研究了基数约束下的经典贪心界；
+预算最大覆盖是单背包模型的一个特例，其算法见 Khuller、Moss 与 Naor~\cite{khuller1999}。
+Feige~\cite{feige1998} 的最大覆盖硬度结果说明，除非 $\mathrm P=\mathrm{NP}$，
+一般模型中的 $1-e^{-1}$ 界不能任意提高。
+网络中的疫情监测选点问题也推动了这一类算法的研究~\cite{leskovec2007}。
+
+对本文的单调次模单背包问题，精确 $1-e^{-1}$ 保证已有重要先例。
+Sviridenko~\cite{sviridenko2004} 枚举至多三个元素后运行贪心；
+Kulik、Schwartz 与 Shachnai~\cite{kulik2021} 将初始枚举缩至至多两个元素，并分析了 $O(n^4)$ 的价值查询及算术操作界。
+Feldman、Nutov 与 Shoham~\cite{feldman2021} 的公开预印本 v2 在定理 1 中证明，
+双元素初始猜测加贪心以 $O(n^4)$ 时间达到精确保证；阈值化的
+$\widetilde O(n^3/\varepsilon)$ 版本得到 $(1-\varepsilon)(1-e^{-1})$。
+\footnote{复杂度取 arXiv:2007.04937v2 的定理陈述。正式出版页的摘要将双猜测结果概述为约 $O(n^3)$；本文不据此断言三次界的优先权。}
+同一预印本还给出单元素猜测加一元补入的 $O(n^3)$ 算法，其保证为
+$(3-\ln 4)/(4-\ln 4)>0.6174$。
+本文证明的候选规则是\textbf{单点种子、真实贪心前缀、至多二元补入}。
+本文的贡献范围是该规则的精确保证及其形式化的查询、操作和抽象空间计费；
+近似常数本身并非新结果。
+
+相邻约束模型提供了不同的证明工具。
+多维背包约束的近似方案见 Kulik、Shachnai 与 Tamir~\cite{kulik2009}；
+连续贪心、舍入与拟阵约束见 Calinescu 等人~\cite{calinescu2011} 和
+Chekuri、Vondr\'ak 与 Zenklusen~\cite{chekuri2014}；
+以次模函数计量成本的约束则见 Iyer 与 Bilmes~\cite{iyer2013}。
+这些模型的可行域与本文的单背包可行域不同，故不能直接将其保证或复杂度作为本文定理的比较基准。
+
+算法速度也受访问模型影响。
+Badanidiyuru 与 Vondr\'ak~\cite{badanidiyuru2014}、Ene 与 Nguyen~\cite{ene2019}
+研究快速次模最大化算法；Li 等人~\cite{li2022} 与 Du 等人~\cite{du2024}
+给出单背包场景中的其他速度、查询或近似折中。
+Chekuri 与 Quanrud~\cite{chekuriquanrud2019} 考察多线性松弛下的并行计算，
+Amanatidis 等人~\cite{amanatidis2021adaptive} 考察低自适应轮数。
+本文第 12 节的 $O(n^3)$ 资源结论采用指定的精确实数单位成本 RAM 计划，
+其中价值预言机调用、辅助操作和峰值抽象字分别计数；它不直接给出实机运行时间的跨论文排名。
+
+简单贪心及附加假设构成另外几条相关研究线索。
+Yaroslavtsev、Zhou 与 Avdiukhin~\cite{yaroslavtsev2020} 通过在贪心前缀后补一个元素获得
+$1/2-\varepsilon$ 保证；Tang 等人~\cite{tang2021modified} 给出修正贪心的
+$0.405$ 历史保证，后续更强的界见前述 Feldman 等人的工作。
+Yoshida~\cite{yoshida2019curvature} 的更高保证依赖曲率上界；
+Zhang、Tang 与 Tang~\cite{zhang2026datadependent} 研究实例相关的质量上界。
+Huang、Kakimura 与 Yoshida~\cite{huang2017streaming} 讨论输入逐项到达的流式背包算法；
+本文所谓“流式”仅指逐行处理候选记录、释放中间工作区，定义见第 12 节。
+
+下面先给出证明依赖图，再逐步核对数值证书与边界情形。
+
+设 $b=e^{-1}$、$\alpha=1-b$。所有对数为自然对数，$t_+=\max(t,0)$，$\ln_+t=\max(\ln t,0)$。插值与成本分组仅用于证明，不增加算法分支。
+
+\section*{证明路线图}
+\noindent\textbf{结论。}单点种子、密度贪心、至多二元补入所得可行解满足
+$f(S_{\mathrm{out}})\ge(1-e^{-1})\mathrm{OPT}$。当前流式实现对 $n\ge1$ 还有
+$Q\le n^3$、$A\le141n^3$、$P\le66n^2$；$A,P$ 采用第 12 节的抽象实数 RAM 计费。
+
+\begin{center}
+\begin{tikzpicture}[
+  >=Stealth,
+  box/.style={draw,rounded corners,align=center,inner sep=4pt,font=\small,text width=7.3cm},
+  side/.style={draw,rounded corners,align=center,inner sep=4pt,font=\small,text width=4.1cm},
+  edge/.style={->,thick}
+]
+\node[box] (a) at (0,0) {S2R：归一化并反设 $M<\alpha$};
+\node[box] (b) at (-2.4,-1.25) {真实贪心路径与残余密度界（第 2 节）};
+\node[box] (c) at (-2.4,-2.50) {统一密度证书 (3.1)（第 3 节）};
+\node[box] (d) at (-2.4,-3.75) {排除大成本与不平衡成本：$0<s<1/4$，$0\le u<1/5$（第 4--5 节）};
+\node[box] (e) at (-2.4,-5.10) {成本根、冻结分组与熵补偿：$G(1)$ 下界，$KJ\le\lambda$（第 7、9 节）};
+\node[box] (f) at (-2.4,-6.45) {截断与标量证书：$F\le H(s)<0$（第 8、10 节）};
+\node[box] (g) at (-2.4,-7.80) {冻结比较 (6.1)：推出 $M\ge\alpha$，与反设矛盾};
+\node[side] (i) at (4.1,-2.50) {候选压缩与流式计费：$Q,A,P$ 上界（第 12 节）};
+\node[box] (j) at (0,-9.10) {联合主定理：可行输出、价值等价、近似与资源界};
+\draw[edge] (a) -- (b);
+\draw[edge] (b) -- (c);
+\draw[edge] (c) -- (d);
+\draw[edge] (d) -- (e);
+\draw[edge] (e) -- (f);
+\draw[edge] (f) -- (g);
+\draw[edge] (a.east) -| (i.north);
+\draw[edge] (g.south) -- (j.north west);
+\draw[edge] (i.south) |- (j.east);
+\end{tikzpicture}
+\end{center}
+
+\noindent\textbf{三处必须核对的桥梁。}(3.1) 从真实路径推出统一密度下界；
+(6.1) 把 $G(1)$ 下界、$KJ\le\lambda$ 和剩余数值条件转成 $M\ge\alpha$；
+(10.4) 给出严格的 $F\le H(s)<0$，从而验证该剩余条件。
+成本根与分组只用于分析，不是算法的新分支。资源界沿图中右支独立证明。
+
+\noindent\textbf{Lean 对应。}近似证明入口见 \texttt{Main.lean}，流式联合结论见
+\texttt{StreamingComplexity.lean}。
+其 Lean 名称为 \texttt{S2R.Instance.s2r\_verified\_streaming}。
+完整公式与边界情形见下文。
+
+\section{定理、算法与归一化}
+
+\textbf{主定理（S2R）。} 设 $f:2^V\to\mathbb R_{\ge0}$ 单调次模、$f(\varnothing)=0$，$|V|=n$，每个元素的成本 $c_i>0$，预算 $B\ge0$。下述算法返回可行解 $S_{\rm out}$；当 $n\ge1$ 时，它还满足
+
+\begin{equation}
+f(S_{\rm out})\ge(1-e^{-1})\max_{c(O)\le B}f(O),\qquad
+Q(n)\le n^3,\quad A(n)\le141n^3,\quad P(n)\le66n^2.
+\tag{1.1}
+\end{equation}
+
+这里 $Q$ 计价值查询，$A$ 计辅助操作，$P$ 计峰值 RAM 字数。$A$ 与 $P$ 使用第 12 节定义的精确实数单位成本模型；$n=0$ 时价值结论直接成立。
+
+\textbf{算法。} 先将空集列为候选，再枚举每个可行单点种子 $a$。从 $S_0=\{a\}$ 出发，每一步在可加入元素中选择边际密度 $f(i\mid S)/c_i$ 最大者，其中 $f(i\mid S)=f(S\cup\{i\})-f(S)$。平局按固定全序处理；即使最大边际为零，也继续加入该元素，直到没有可加入元素。对路径的每个真实前缀 $S_t$，考察所有可行的 $S_t\cup R$（$|R|\le2$）；补入元素后不重新运行贪心。最终输出价值最大的候选。第 12 节证明候选压缩保持输出价值，并给出资源界。
+
+若最优值为零，近似结论立即成立。若存在大小至多三的非空最优解，从该解中的一个元素出发，其余至多两个元素可作为补入集合，因此算法会考察到整个最优解。以下只需处理 $|O|\ge4$。将价值按最优值缩放，使 $f(O)=1$；在 $O$ 中取单点价值最大的 $a\in O$，并记 $p=f(\{a\})>0$。由次模性有 $1\le\sum_{i\in O}f(\{i\})$，所以该最大单点价值确实为正。下文固定算法以 $a$ 为种子的那条路径。
+
+将 $O\setminus\{a\}=\{o_1,\ldots,o_m\}$ 按成本递减排列。由于 $|O|\ge4$ 且成本均为正，可以按尾部成本之和缩放全部成本与预算，使
+
+\begin{equation}
+c_1=\mu\ge c_2=\lambda\ge c_3\ge\cdots>0,\qquad
+\sum_{i\ge3}c_i=1,\qquad C=1+\mu+\lambda.
+\tag{1.2}
+\end{equation}
+
+原解 $O$ 可行，因此在该缩放下，选择种子后仍有至少 $C$ 的可用预算。再定义
+
+\begin{equation}
+s=\frac{\mu+\lambda}{2},\quad
+u=\frac{\mu-\lambda}{\mu+\lambda}\in[0,1),\quad
+\mu=s(1+u),\quad\lambda=s(1-u),\quad C=1+2s.
+\tag{1.3}
+\end{equation}
+
+记算法在全部种子及补入候选中得到的最大价值为 $M$。为证近似界，反设
+
+\begin{equation}
+M<\alpha.
+\tag{1.4}
+\end{equation}
+
+以种子之后加入的累计成本为横坐标，在相邻真实前缀的价值之间作线性插值，记为 $G(x)$。每段斜率恰为该次真实贪心步骤的密度；由单调性及每个真实前缀都是候选，插值值也不超过 $M$。
+
+\section{残余与真实路径}
+
+固定最优元素的成本次序。对任意包含 $a$ 的集合 $S$，按此顺序定义残余边际
+$r_i(S)=f(o_i\mid S\cup\{o_1,\ldots,o_{i-1}\})$。
+次模性控制每一项，望远镜求和控制总量，得到
+
+\begin{equation}
+0\le r_i(S)\le f(o_i\mid S)\le p,\qquad
+1-f(S)\le\sum_i r_i(S)\le1-p.
+\tag{2.1}
+\end{equation}
+
+路径上的集合逐步增大，因此各 $r_i$ 不增；若 $o_i$ 已被选入，其残余为零。若 $o_i$ 当前可加入，而最大可行边际密度为 $\rho$，贪心选择规则给出
+
+\begin{equation}
+r_i(S)\le\rho c_i.
+\tag{2.2}
+\end{equation}
+
+若只把 $R\subseteq O\setminus\{a\}$ 中的元素按原次序加入 $S$，每一步的条件集合均包含于定义对应 $r_i(S)$ 时的条件集合；由边际递减性，
+
+\begin{equation}
+\sum_{i:o_i\in R}r_i(S)\le f(R\mid S).
+\tag{2.3}
+\end{equation}
+
+特别地，当 $|R|\le2$ 且 $S\cup R$ 可行时，它是算法考察的候选，因此
+
+\begin{equation}
+\sum_{i:o_i\in R}r_i(S)\le M-f(S).
+\tag{2.4}
+\end{equation}
+
+现在取一条真实贪心步骤，以其左端前缀的种子后成本为 $x$。根据 $x$ 所处区间，选择可补入的最优元素并估计其余元素的残余，可得下表三种密度下界：
+
+\begin{equation}
+\begin{array}{c|c|c|c}
+\text{范围}&\text{补入}&\text{其余残余的下界及总成本}&\rho\text{ 下界}\\\hline
+x\le1&o_1,o_2&1-M>b,\quad1&b\\
+x\le1+\lambda&o_1&1-M>b,\quad1+\lambda&b/(1+\lambda)\\
+x\le1+\mu&o_2\text{，舍弃 }o_1&1-M-p>b-p,\quad1&b-p
+\end{array}
+\tag{2.5}
+\end{equation}
+
+每行所补入元素的成本不超过剩余预算 $C-x$。其余尚未选入的最优元素可逐个加入当前前缀，而已选元素的残余为零。先由 (2.1)、(2.4) 下界其余残余之和，再以表中所列总成本和 (2.2) 得到最后一列。
+若路径在种子后成本不超过 $1+\lambda$ 时终止，上述可加入性迫使所有最优元素已选入，因而 $M\ge1$，与 (1.4) 矛盾。故路径必须严格跨过 $1+\lambda$，特别是 $G(1)$ 已定义。若它在成本不超过 $1+\mu$ 时终止，则除 $o_1$ 外的最优元素均已选入；取得 $p<b$ 后将排除这一情形。
+
+真实步骤的密度沿路径不增：可行候选集只会缩小，而仍可行元素的边际密度由次模性不会增加。因此分段线性的 $G$ 为凹函数，并在有限路径覆盖的区间上绝对连续。
+以下反复使用同一个插值原则。若某真实步骤从价值 $g$ 出发，密度为 $\rho\ge0$，则该步内 $G(x)\ge g$。只要左端满足 $\rho\ge F(g)$，且 $F$ 随价值不增，就有
+\[
+G'(x)=\rho\ge F(g)\ge F(G(x)).
+\]
+有限个折点不影响随后的积分。若某密度下界只适用于截止成本之前，就只积分跨越该截止点的真实步骤中位于其前的部分；插值点始终不作为新的真实前缀。
+
+先在 $[0,1]$ 积分 (2.5) 第一行的密度下界，再结合 $M<\alpha$，得到
+
+\begin{equation}
+G(1)\ge p+b,\qquad p<1-2b<b.
+\tag{2.6}
+\end{equation}
+
+由 $p<b$，前述第三种提前终止会导致 $M\ge1-p>\alpha$，同样矛盾。路径因此覆盖表中全部截止点。在其余两个区间继续积分，得到
+
+\begin{equation}
+M\ge G(1)+\frac{b\lambda}{1+\lambda}+(b-p)(\mu-\lambda).
+\tag{2.7}
+\end{equation}
+
+\section{统一密度证书}
+
+\textbf{引理。} 继续采用反设 (1.4)。对任意固定参数 $0<\beta\le\tau_i\le1$（$1\le i\le m$），有
+\begin{equation}
+G(1)\ge1+b-\beta+
+p\left[\beta-\sum_i(\tau_i-\beta)\right]
++b\sum_i c_i\ln\tau_i.
+\tag{3.1}
+\end{equation}
+
+\textbf{证明。} 令 $W=1-p\in(0,1)$。由 $\sum_i r_i(\{a\})=W$ 且 $r_i(\{a\})\le p$ 可知，连续非降的截断和 $\sum_i\min(p,\kappa c_i)$ 随 $\kappa$ 增大可达到 $W$。取这样的 $\kappa>0$，以 $v_i=\min(p,\kappa c_i)$ 为参考质量，则 $\sum_i v_i=W$。记
+\[
+\Phi(\rho)=\sum_i\min(v_i,\rho c_i)
+=\min\{W,\sum_i\min(p,\rho c_i)\}.
+\]
+在 $\rho\le\kappa$ 与 $\rho\ge\kappa$ 两种情形分别代入即可验证该恒等式。
+令 $\rho_*=\max_i v_i/c_i>0$。函数 $\Phi$ 在 $[0,\rho_*]$ 上严格递增至 $W$，此后恒为 $W$；仅在严格递增段定义其逆函数 $\sigma$，并取端点值 $\sigma(W)=\rho_*$。
+若真实步骤的左端成本不超过 1，所有未选入的最优元素都可单独加入。于是 (2.1)、单点上界与 (2.2) 合起来给出
+\[
+1-g\le\sum_i r_i(S)\le\min\{W,\sum_i\min(p,\rho c_i)\}=\Phi(\rho).
+\]
+这里比较的是残余总和；证明并未要求逐项满足 $r_i(S)\le v_i$。由上节的插值原则和 (2.5)，在 $[0,1]$ 上几乎处处有 $G'\ge\max\{b,\sigma(1-G)\}$。
+同时 $b<1-G(x)\le W$，所以所需积分在当前区间内有限。对余值应用链式法则，得到
+\[
+\int_{1-G(x)}^W\frac{dR}{\sigma(R)}\ge x,\qquad
+T_b:=\int_{\Phi(b)}^W\frac{dR}{\sigma(R)}
+=\sum_i c_i\ln_+\frac{v_i}{bc_i}\le W<1.
+\]
+求和式是在 $\Phi$ 的各线性段逐段换元所得；若 $b\ge\rho_*$，则 $\Phi(b)=W$，积分和求和均为零。上界 $T_b\le W$ 使用 $\ln_+t\le t/e$。因此在成本 $T_b$ 处有 $G(T_b)\ge1-\Phi(b)$；当 $T_b=0$ 时，它退化为 $G(0)=p=1-W$。从该点再以 $G'\ge b$ 积分到成本 1，得到
+\[
+G(1)\ge1+b-\sum_i\left[\min(v_i,bc_i)+bc_i\ln_+\frac{v_i}{bc_i}\right].
+\]
+最后把积分表达式化为指定参数 $\tau_i$ 的下界。由 $\ln x\le x-1$，对 $t>0,\ 0<\tau\le1$ 有
+$\min(t,1)+\ln_+t\le\tau t-\ln\tau$。逐项应用该不等式，并利用
+\[
+\sum_i\tau_i v_i
+=\beta W+\sum_i(\tau_i-\beta)v_i
+\le\beta(1-p)+p\sum_i(\tau_i-\beta),
+\]
+将其代回即可得到 (3.1)。
+
+\section{排除大成本}
+
+先排除两个最大成本元素的平均成本过大的情形。我们将证明，反设 (1.4) 迫使
+\begin{equation}
+0<s<1/4.
+\tag{4.1}
+\end{equation}
+证明只需下列显式常数和对数估计：
+\[
+\frac{27}{10}<\frac{163}{60}=\sum_{j=0}^5\frac1{j!}<e
+<\frac{163}{60}+\frac1{6!}\frac1{1-1/7}<\frac{11}{4},
+\]
+\begin{equation}
+\ln(1+x)\ge\frac{2x}{2+x}\ge\frac{x}{1+x}\quad(x\ge0),
+\qquad \ln\frac32<\frac12-\frac18+\frac1{24}=\frac5{12}.
+\tag{4.2}
+\end{equation}
+$\ln(1+x)-2x/(2+x)$ 的导数为 $x^2/[(1+x)(2+x)^2]$，因此 $x>0$ 时第一个不等式严格；所用上界则由 $1/(1+t)<1-t+t^2$ 积分得到。
+
+令 $w=\lambda/s\in(0,1]$。把 (2.7) 按 $w$ 与 $1-w$ 分组，并用 $\mu-\lambda=2s(1-w)$，可写成
+\begin{equation}
+M\ge w\left[G(1)+\frac{bs}{1+s}\right]
++(1-w)\left[G(1)+2s(b-p)\right].
+\tag{4.3}
+\end{equation}
+只需分别估计 (4.3) 的两个方括号。对第二项，在 (3.1) 中统一选取
+$\tau_i=\beta=e^{ep-1}<1$，与 $C$ 有关的项抵消，得到
+\[
+G(1)+2s(b-p)\ge1+p-(1-p)e^{ep-1}\ge\alpha.
+\]
+其中最后一个不等式由 (2.6) 给出的 $2+ep<e<3$ 和下式推出：
+\[
+\ln\frac{1+ep}{1-p}\ge\frac{2ep}{2+ep}+p\ge3p\ge ep.
+\]
+
+为估计第一个方括号，改在 (3.1) 中取
+$\beta=\min(bC,2/3)$、$\tau_1=\tau_2=3\beta/2$，其余 $\tau_i=\beta$。
+此时 (3.1) 中 $p$ 的系数恰好为零，因此
+\[
+G(1)\ge B(s):=1+b-\beta+bC\ln\beta+2bs\ln(3/2).
+\]
+在未触及截断值、即 $\beta=bC$ 时，$[B(s)+bs/(1+s)-\alpha]/b$ 可化为
+\[
+H_0(s)=C\ln C+2s\ln(3/2)+\frac{s}{1+s}-4s,
+\qquad H_0''(s)=\frac4{1+2s}-\frac2{(1+s)^3}>0.
+\]
+由 $H_0(0)=0$、$H_0(1/4)=2\ln(3/2)-4/5>0$ 及严格凸性，可得
+$H_0(s)>0$ 对 $s\ge1/4$ 成立。
+一旦 $\beta$ 达到 $2/3$，就有 $B(s)=1/3+b-b\ln(3/2)$，因此 $B(s)+bs/(1+s)$ 随 $s$ 递增。由于 $\beta(1/4)<2/3$，且两段表达式在截断点连续，第一个方括号对全部 $s\ge1/4$ 也严格大于 $\alpha$。结合第二项的下界，(4.3) 与反设矛盾，从而得到 (4.1)。
+
+\section{排除不平衡成本}
+
+接着在 (4.1) 的范围内排除两个最大成本相差过大的情形。设 $0<s\le1/4,\ u\ge1/5$，记 $y=1+\lambda,\ \Delta=2su,\ L=1+3s/2$。
+在 (3.1) 中取 $\beta=bL,\ \tau_1=2\beta-\Delta$，其余 $\tau_i=\beta$。下列界同时保证这些参数满足引理要求：
+\[
+\beta-\Delta>\frac4{11}(1-4s)\ge0,\qquad
+2\beta-\Delta<\frac45(1+s)\le1.
+\]
+这一选择使证书中 $p$ 的系数恰为 $\Delta$，因而与 (2.7) 中的 $-p\Delta$ 抵消。合并两式得到
+\begin{equation}
+M-\alpha\ge bU(s,u),\qquad
+U=2-L+\Delta+\frac{\lambda}{y}
++\mu\ln(2bL-\Delta)+y\ln(bL).
+\tag{5.1}
+\end{equation}
+虽然原参数满足 $u<1$，函数 $U$ 可连续延拓到端点 $u=1$。固定 $s$ 后计算二阶导数，
+\[
+U_{uu}=-\frac{2s^2}{y^3}
+-\frac{4s^2}{2\beta-\Delta}
+-\frac{4s^3(1+u)}{(2\beta-\Delta)^2}<0,
+\]
+故 $U$ 关于 $u$ 严格凹；要在 $1/5\le u<1$ 上证明其为正，只需检验 $U(s,1/5)>0$ 和 $U(s,1)>0$。
+
+先考察 $u=1/5$。令 $\gamma=3/2-e/5\in[3/4,1]$，直接求导并放缩得
+\begin{equation}
+\begin{aligned}
+\partial_s^2U(s,1/5)
+&=\frac{3/20+9s/5}{(1+3s/2)^2}
++\frac{6\gamma(2+\gamma s)}{5(1+\gamma s)^2}
+-\frac{32}{25(1+4s/5)^3}\\
+&\ge\frac{162}{125}-\frac{32}{25}=\frac2{125}>0.
+\end{aligned}
+\tag{5.2}
+\end{equation}
+放缩使用 $\gamma s\le1/4$，以及 $(2+t)/(1+t)^2\ge36/25$ 在该区间内成立。又 $U(0,1/5)=0$ 且 $\partial_sU(0,1/5)=(6\ln2-4)/5>0$；正的二阶导数保证 $U(s,1/5)>0$。
+
+再考察 $u=1$。令 $\theta=e-3/2\in(0,5/4)$，此时函数化为
+\[
+V(s)=U(s,1)=\ln(1+3s/2)+2s\ln(1-\theta s)+(2\ln2-3/2)s.
+\]
+它在 $[0,1/4]$ 上严格凹，因为两个非线性项均凹；其中
+$(s\ln(1-\theta s))''=-\theta(2-\theta s)/(1-\theta s)^2<0$。
+对两个端点使用 (4.2) 和 $e<11/4$，有
+\begin{equation}
+V(0)=0,\qquad
+V(1/4)=\ln\frac{11}{8}+\frac12\ln\frac{11-2e}{4}-\frac38
+>\frac32\ln\frac{11}{8}-\frac38>0.
+\tag{5.3}
+\end{equation}
+严格凹函数位于端点连线之上，故 $V(s)>0$ 对 $0<s\le1/4$ 成立。两个端点的正性与 $U$ 关于 $u$ 的凹性相结合，使 (5.1) 与反设矛盾。因此可能的反例只剩下
+\begin{equation}
+0<s<1/4,\qquad0\le u<1/5.
+\tag{5.4}
+\end{equation}
+
+\section{冻结比较引理}
+
+\textbf{引理。} 以下比较把前段已得的 $G(1)$ 下界传递到目标近似比。已知 $G(1)\ge B_0$，记 $r=(\alpha-B_0)/b$。把种子外的最优元素仅为分析之用分成 $H,T$，令 $K=c(H)$、$A_T=c(T)>0$，并取 $0<d\le\mu$，使每个 $i\in T$ 满足 $c_i\le d$。若
+\begin{equation}
+J=e^{(\mu-d)/A_T}-1,\qquad KJ\le\lambda,\qquad
+r\le\frac{\lambda+(1+\lambda-K)J}{1+\lambda},
+\tag{6.1}
+\end{equation}
+则 $M\ge\alpha$。
+
+\textbf{证明。} 继续反设 (1.4)，令 $y=1+\lambda,\ D=C-d\ge y$。记真实前缀 $S_j$ 的种子后成本为 $x_j$，选取跨过 $y$ 的真实步骤，即 $x_j\le y<x_{j+1}$；以 $\rho$ 表示该步密度，以 $P=S_j$ 表示左端前缀。若 $y$ 恰为某前缀成本，则取其下一步。
+第 2 节已排除在此之前终止的情形，所以该步骤存在。因后续密度不增，
+$G(y)\ge G(1)+\rho\lambda$，且 $\rho\ge b/y$。
+由于 $P$ 的种子后成本不超过 $y$，全部尚未选入的最优元素都可单独加入。因此在 $P$ 上，$H$ 的残余总和至多为 $\rho K$；以后残余只会下降。
+置 $\Theta=1-\rho K$。对 $P$ 及其后种子后成本不超过 $D$ 的任一真实左前缀 $S$，每个未选尾部元素的成本至多为 $d$，因而仍可单独加入。记相应步骤密度为 $\rho_S$，由 (2.1)、(2.2) 得
+$\Theta-f(S)\le\sum_{i\in T}r_i(S)\le A_T\rho_S$。
+应用第 2 节的插值原则，
+\[
+G'(x)\ge\frac{\Theta-G(x)}{A_T}\qquad(y\le x\le D)
+\]
+该微分不等式几乎处处成立。若真实路径在 $D$ 之前终止，因尾部元素原本都可加入，它们必已全部选入；由 (2.1) 得终值至少为 $\Theta$。将 $G$ 以该终值常值延拓至 $D$，延拓后仍绝对连续、不超过 $M$，并满足同一微分不等式。
+这里不需要预设 $\Theta-G$ 的符号。乘以积分因子可得
+$(e^{(x-y)/A_T}(\Theta-G(x)))'\le0$。在 $[y,D]$ 上积分；若 $D=y$，这一步退化为零长度区间。于是
+\begin{equation}
+(1+J)M\ge G(y)+J\Theta
+\ge B_0+\rho(\lambda-KJ)+J
+\ge B_0+\frac b y(\lambda-KJ)+J.
+\tag{6.2}
+\end{equation}
+条件 (6.1) 恰保证最后一行右端不小于 $(1+J)\alpha$，所以 $M\ge\alpha$，引理得证。
+
+\section{成本熵与统一冻结分组}
+
+现在为冻结比较引理选择同一组头尾元素与尾部成本界。为包含 (5.4) 中可能的反例，并方便端点估计，先在闭域 $0<s\le1/4,\ 0\le u\le1/5$ 内定义成本根与熵量：
+
+\begin{equation}
+\sum_i(c_i-z)_+=z,\qquad q=1-z/s,\qquad
+\mathcal E=\sum_{c_i>z}c_i\ln(c_i/z).
+\tag{7.1}
+\end{equation}
+
+根存在且唯一：函数 $z\mapsto\sum_i(c_i-z)_+-z$ 连续严格递减，在 $0,\mu$ 处分别取正值 $C$ 和负值 $-\mu$。
+
+在此参数域中 $\mu<2\lambda$。若 $z>\lambda$，根方程只剩首项，从而给出 $\mu=2z>2\lambda$，矛盾；另一方面，前两项超额给出 $z\ge2s/3$。这些界转写为
+
+\begin{equation}
+u\le q\le1/3.
+\tag{7.2}
+\end{equation}
+
+把成本根代入统一密度证书，在 (3.1) 中取 $\beta=bC,\ \tau_i=\beta\max(1,c_i/z)$。
+由 $z/(C\mu)\ge2/[3C(1+u)]\ge10/27>b$ 可知 $\tau_i\le1$，所以参数合法。
+根方程又给出 $\sum_i(\tau_i-\beta)=\beta$，使 $p$ 的系数消失，得到
+
+\begin{equation}
+G(1)\ge\alpha-br_*,
+\qquad r_*=4s-C\ln C-\mathcal E.
+\tag{7.3}
+\end{equation}
+
+尾部元素的成本之和为 1。令 $x_i=(c_i-z)_+/c_i$（$i\ge3$）；由成本次序和 (7.2)，有 $0\le x_i\le q$。以 $c_i$ 为权重的均值为
+
+\begin{equation}
+R=\sum_{i\ge3}c_ix_i=3z-\mu-\lambda=s(1-3q).
+\tag{7.4}
+\end{equation}
+
+由于这些权重之和为 1，对凸函数 $-\ln(1-x)$ 使用 Jensen 不等式，
+
+\begin{equation}
+\mathcal E\ge\mu\ln(\mu/z)+\lambda\ln(\lambda/z)-\ln(1-R).
+\tag{7.5}
+\end{equation}
+
+记 $h(u)=(1+u)\ln(1+u)+(1-u)\ln(1-u)$。将 (7.5) 代回 (7.3)，并用 $\mu=s(1+u)$、$\lambda=s(1-u)$ 整理，得到
+
+\begin{equation}
+r_*\le r:=4s-C\ln C-sh(u)+2s\ln(1-q)+\ln(1-R).
+\tag{7.6}
+\end{equation}
+
+接下来固定一个在全域通用的冻结分组：
+
+\begin{equation}
+k=\frac34(1-u),\quad d=\frac{z}{1-z/k},\quad
+\bar d=\min(d,\lambda),\quad
+H=\{o_1,o_2\}\cup\{o_i:i\ge3,\ c_i>d\}.
+\tag{7.7}
+\end{equation}
+
+令 $T=(O\setminus\{a\})\setminus H$，$K=c(H)$、$A=c(T)=C-K$，并记
+$y=1+\lambda,\ \ell=\mu-\bar d\ge0$。
+因 $k\ge3/5>s\ge z$，$d$ 的分母为正，且 $T$ 中每个元素的成本均不超过 $\bar d$。
+当 $d<\lambda$ 时，根方程给出
+$K(1-z/d)\le z$，故 $K\le k$；当 $d\ge\lambda$ 时，$H=\{o_1,o_2\}$，$K=2s\le k$。因此
+
+\begin{equation}
+2s\le K\le k<1,\qquad
+\mu<C-k\le A\le1,\qquad
+(d-\bar d)(K-2s)=0.
+\tag{7.8}
+\end{equation}
+
+特别地，$A>\mu$ 的严格性可由 $C-k-\mu=1/4+s+(3/4-s)u>0$ 直接看出。取 $J=e^{\ell/A}-1$。由于 $\ell\le\mu-z=s(q+u)$，
+
+\begin{equation}
+\frac{\ell}{A}\le\frac{s(q+u)}{C-k}
+\le\frac{4s}{3+4s}\le\ln(1+4s/3).
+\tag{7.9}
+\end{equation}
+
+第二个不等式等价于 $3q+4s(q+u)\le1+8s$，它由 $u\le q\le1/3$ 推出；最后一步使用 (4.2) 的对数下界。因此
+
+\begin{equation}
+KJ\le k(4s/3)=\lambda.
+\tag{7.10}
+\end{equation}
+
+现在 (6.1) 的前两个条件均已满足。又 $y-K=A-\mu>0$ 且 $J\ge\ell/A$，所以只要有 $G(1)\ge\alpha-br_0$，将 (6.1) 的最后一个条件放松为下式即可：
+
+\begin{equation}
+yr_0-\lambda-(1-\mu/A)\ell\le0.
+\tag{7.11}
+\end{equation}
+
+\section{截断量与全域二次上界}
+
+剩下的工作是把 (7.11) 化为只依赖 $s$ 的严格负性证书。为使上界在端点也成立，以下在覆盖 (5.4)、(7.2) 的闭域
+\begin{equation}
+0<s\le1/4,\qquad0\le u\le1/5,\qquad u\le q\le1/3
+\tag{8.1}
+\end{equation}
+中继续使用第 7 节的分组，并记
+\[
+L=4s-C\ln C+\ln(1-s),\quad v=1+9s/2,\quad
+\tau=\frac{4s}{3+4s},\quad X=\frac{\bar d-z}{s}.
+\]
+由 $z\le\bar d\le\lambda$ 及 $\bar d\le d$，可先控制截断差值：
+\[
+0\le X\le q-u,\qquad
+kX\le z(X+1-q)\le z(1-u)\le s(1-u-X)(1-u).
+\]
+最后一个不等式除以 $1-u>0$，便得到同时适用于 $d\le\lambda$ 与 $d\ge\lambda$ 的截断界
+\begin{equation}
+X\le(1-u)\tau,\qquad \ell=s(q+u-X).
+\tag{8.2}
+\end{equation}
+
+接着对 (7.6) 作统一二次上界。把其中的显式函数延拓到 $0\le q\le1/3$，在 $q=0$ 处展开；这个参考点只用于估计，不要求由实际成本列表产生。
+$r(s,u,0)=L-sh(u)$、$r_q(s,u,0)=sC/(1-s)$，且
+\[
+r_{qq}=-\frac{2s}{(1-q)^2}-\frac{9s^2}{(1-R)^2}\le-2sv.
+\]
+二阶导数因此有统一负上界，积分两次得到
+\begin{equation}
+r\le L-sh(u)+\frac{sC}{1-s}q-svq^2.
+\tag{8.3}
+\end{equation}
+为了同时控制 $u$ 的贡献，由 $h(0)=h'(0)=0$ 和 $h''\ge2$ 得 $h(u)\ge u^2$。此外，$C\ln C\le2s+2s^2$ 与 $\ln(1-s)\ge-s-s^2$ 给出 $L\ge s-3s^2\ge s/4$。记
+\[
+B(s,q)=(1+s)L-s+s(1-s)\tau
++\frac{s^2(5+s)}{1-s}q-s(1+s)vq^2.
+\]
+将 (8.2)、(8.3) 代入 $\widehat F_0=yr-\lambda-(1-\mu)\ell$。这里 $1-\mu>0$，故可按给定方向使用截断界；整理后得到
+\begin{equation}
+\begin{aligned}
+\widehat F_0\le B(s,q)
+&+su\left[s-\tau-L+svq^2-\frac{3s^2q}{1-s}\right]\\
+&-su^2[1-s(\tau+u)]
+\le B(s,q)-\frac{2s}{3}u^2.
+\end{aligned}
+\tag{8.4}
+\end{equation}
+第二个不等式用到了 $\tau\ge s$、$L\ge s/4$、$vq^2\le1/4$ 及 $s(\tau+u)\le1/3$。由于 (8.2) 已统一处理截断，此处无需分别讨论 $d$ 与 $\lambda$ 的大小。
+
+\section{熵补偿}
+
+前节只用了成本根与参数域给出的粗上界；现在回到实际成本列表，利用被分入 $H$ 的尾部元素获得额外的熵补偿。令 $h_T=K-2s$，则 $A=1-h_T>0$。这些尾部元素的 $x_i$ 严格大于 $z/k>R$。函数 $\phi(x)=-\ln(1-x)$ 满足 $\phi''\ge1$；对两组元素分别应用加权强凸性及均值关系，得到
+\[
+\sum_{i\ge3}c_i\phi(x_i)
+\ge\phi(R)+\frac12\sum_{i\ge3}c_i(x_i-R)^2
+\ge\phi(R)+\frac{h_T}{2(1-h_T)}(z/k-R)^2.
+\]
+若 $h_T=0$，最后的补偿项自然为零。把此界与 (7.3)、(7.5)、(7.6) 合并，得到
+\begin{equation}
+\omega=\frac12(z/k-R)^2,\qquad
+G(1)\ge\alpha-b\left[r-\omega\frac{K-2s}{A}\right].
+\tag{9.1}
+\end{equation}
+为给补偿项一个便于代入 (8.4) 的下界，令 $w=(1-q)/k-1+3q$、$\Gamma=(1+u)(q+u)-w^2/2$。在 (8.1) 中固定 $q$；$w,w_u,w_{uu}$ 均为正并随 $u$ 递增，因此
+\[
+\begin{gathered}
+\Gamma_{uu}=2-w_u^2-ww_{uu}\le\Gamma_{uu}(q,0)=\frac23(4q^2-1)<0,\\
+\Gamma(q,0)=\frac{-25q^2+8q-1}{18}<0,\qquad
+\Gamma_u(q,0)=\frac{5-7q+20q^2}{9}\le\frac23.
+\end{gathered}
+\]
+由 $\Gamma$ 关于 $u$ 的凹性及其在零点的值和斜率，支撑线界给出 $\Gamma\le2u/3$，等价于
+\begin{equation}
+\omega=\frac{s^2w^2}{2}\ge s^2[(1+u)(q+u)-2u/3].
+\tag{9.2}
+\end{equation}
+
+\section{完整 F 的全域证书}
+
+令 $t=1/A-1=(K-2s)/A$；(7.8) 保证 $0\le t\le k/(1-k)\le3$。在 (7.11) 中使用 (9.1) 的下界，即取 $r_0=r-\omega t$。修正项带有因子 $K-2s$，而 (7.8) 给出 $(d-\bar d)(K-2s)=0$，故在该乘积中可把 $\ell$ 换成 $\mu-d$。所需验证的量成为
+\begin{equation}
+F=\widehat F_0+t[\mu(\mu-d)-y\omega].
+\tag{10.1}
+\end{equation}
+此处并不需要 $\mu-d$ 非负。利用 $0<k-z\le3/4$ 与 $1-q\ge2/3$，可把乘积项上界为
+\[
+\mu(\mu-d)=s^2(1+u)(q+u)
+-\frac{s^3(1+u)(1-q)^2}{k-z}
+\le s^2(1+u)(q+u)-s^3/2.
+\]
+把该上界、(8.4) 与 (9.2) 同时代入，并使用 $y\ge1$。对 $u$ 完成平方后，
+\begin{equation}
+F\le B(s,q)-\frac{2s}{3}\left(u-\frac{st}{2}\right)^2
++\frac{s^3t(t-3)}6\le B(s,q).
+\tag{10.2}
+\end{equation}
+平方项非正，而 $0\le t\le3$ 使 $t(t-3)\le0$。再对 $B$ 中的 $q$ 完成平方；这一全局上界无需先确定可行区间内的极值点：
+\begin{equation}
+F\le H(s):=(1+s)L-s+\frac{4s^2(1-s)}{3+4s}
++\frac{s^3(5+s)^2}{2(1-s)^2(1+s)(2+9s)}.
+\tag{10.3}
+\end{equation}
+为证明 $H(s)$ 在整个区间严格为负，对其中的对数应用有限几何级数积分，并保留余项的符号，得到
+\[
+L\le s-\frac52s^2+s^3-\frac{19}{12}s^4+\frac75s^5,
+\qquad
+(1+s)L-s\le-\frac32s^2(1+s)-\frac12s^4.
+\]
+第二个界使用 $s\le1/4$。将它代入 (10.3) 并通分；令 $D=(1-s)^2(1+s)(2+9s)(3+4s)>0$，最终得到
+\begin{equation}
+\begin{aligned}
+H(s)&\le-\frac{s^2P(s)}D-\frac{s^6(1+107s^2+36s^3)}{2D}<0,\\
+P(s)&=(1-4s)[1-s+42s^2+8s^3(5-s)]+24s^5>0.
+\end{aligned}
+\tag{10.4}
+\end{equation}
+$P$ 中各项非负，且 $24s^5>0$，所以负性是严格的，并覆盖 $t=0$、$d=\lambda$ 与 $s=1/4$ 等边界。以 $\bar d$ 作为尾部成本上界，(7.10) 和 (10.4) 验证了冻结比较引理的全部条件，因此 $M\ge\alpha$。
+
+\section{近似保证}
+
+归纳上述排除步骤，任何满足反设 (1.4) 的实例都必须由 (5.4)、(7.2) 落入 (8.1)。但在整个 (8.1) 上，(7.10) 与 (10.4) 已验证冻结比较引理，迫使 $M\ge\alpha$，与反设矛盾。恢复价值缩放，再并入第 1 节处理的零最优值和 $|O|\le3$ 情形，即得 (1.1) 的近似保证。
+
+\section{三次复杂度与二次峰值空间}
+
+资源计数在原始成本与预算下进行，不使用前面证明近似比时的缩放。固定一个种子的真实贪心路径，记为
+$S_0\subsetneq\cdots\subsetneq S_T$，成本 $C_t=c(S_t)$ 严格递增。
+以 $\operatorname{pos}(i)$ 记录元素首次进入路径的下标：种子的下标取 0，从未入选者取 $T+1$。
+
+对每个非空集合 $R,\ |R|\le2$，记
+
+\[
+d_R=\min_{i\in R}\operatorname{pos}(i)-1,\qquad
+K_{\rm path}(q)=\max\{t\in\{0,\ldots,T\}:C_t\le q\},
+\]
+
+若定义 $K_{\rm path}$ 的集合为空，其最大值取 $-1$。前缀与补入集合不交当且仅当 $t\le d_R$；在不交条件下，补入后可行当且仅当 $C_t\le B-c(R)$。两个限制均随 $t$ 单调，故最后一个同时满足它们的前缀下标为
+
+\begin{equation}
+t_R=\min\{d_R,K_{\rm path}(B-c(R))\}.
+\tag{12.1}
+\end{equation}
+
+\textbf{候选压缩。} 对每个非空补入集合，只查询 $t_R\ge0$ 时的 $f(S_{t_R}\cup R)$，并保留终止前缀 $S_T$，即可保持原算法的最大候选价值。事实上，给定任何原候选 $S_t\cup R$，先删去已在前缀中的补入元素，令 $R'=R\setminus S_t$。若 $R'$ 为空，$S_t$ 被 $S_T$ 包含；否则 $t_{R'}\ge t$，因此
+$S_t\cup R'\subseteq S_{t_{R'}}\cup R'$。右侧可行且价值不低于原候选。反过来，压缩后考察的每个集合本来就是原算法的合法候选，故两种候选集的最大价值相同。
+
+\textbf{后缀流式扫描。} 先按成本递减排序全体元素，成本相同时以下标破平局。处理种子 $a$ 时从排序表删去它，得到 $L_a=(v_1,\ldots,v_{n-1})$。单元素补入扫描整张表；二元补入固定 $v_i$ 后只扫描其右侧后缀。后缀直接借用原数组区间，无需复制或再次筛选，且每个无序补入集合恰好出现一次。
+
+空行不调度。$n=1$ 时没有补入行；$n\ge2$ 时恰有一个单元素行及 $n-2$ 个非空二元后缀行。因而每个种子的行数与总槽位数分别为
+
+\[
+J_a=n-1,\qquad
+N_a=(n-1)+\binom{n-1}{2}=\frac{n(n-1)}2.
+\]
+
+单元素槽位的预算阈值为 $B-c_j$，二元槽位为 $B-c_i-c_j$。由于行内元素按成本递减排列，阈值沿行非降，查找满足 (12.1) 的前缀成本游标只需单向前移。扫描到一个槽位时立即计算其截止下标、对有效候选查询一次并更新最佳记录，不保存整行记录。若补入集合含种子，可删去种子而不改变集合；若补入元素均已在前缀中，该候选的价值不超过终止前缀。结合候选压缩及无序补入集合只出现一次，可知流式扫描与原算法输出价值相同。
+
+\textbf{缓存与输出。} 只保留当前种子的 $n+1$ 个前缀槽位及其成员快照、成本。补入查询临时改写至多两个成员位，调用预言机后立即恢复；终止前缀的价值复用最后一次贪心查询，空集零值无需查询。扫描结束时保留该种子的最佳记录及价值。若它改进全局最佳值，就在释放种子缓存前把相应前缀复制到独立的输出数组，再写入至多两个补入位。每个种子至多复制一次，因此无须存储所有种子的历史表；Lean 已证明输出集合可行且其价值等于原算法的最大候选价值。
+
+\textbf{抽象计费流程。} 操作数按全局准备与排序、逐种子建路和缓存、逐行扫描、赢家复制四个阶段求和。全局准备计 $20(n+1)$，排序上界为 $4(n^2+n+1)$；建路和扫描计入下文的 $A_a$ 与 $A_{\rm row}$。即使某种子没有改进全局记录，上界也为它预留一次复制的 $2n+6$。Lean 的行折叠、记录更新和输出物化定理核对相应的值与可行性；操作数和分配计划属于这些步骤所定义的抽象 RAM 模型，而非编译后程序的逐指令时间或逐字节内存测量。
+
+\textbf{查询界。} 对一个种子，第 $k$ 次贪心决策最多向价值预言机查询 $n-k$ 个候选，其中 $0\le k<n$。每个有效补入槽位至多查询一次，故补入查询数不超过 $N_a$；空行、无效记录和已复用的终止值均不增加查询。对至多 $n$ 个种子求和，得到
+
+\begin{equation}
+Q(n)\le n\left(\frac{n(n+1)}2+\frac{n(n-1)}2\right)=n^3.
+\tag{12.2}
+\end{equation}
+
+\textbf{辅助操作界。} 在精确实数单位成本 RAM 模型中，算术、比较、数组读写、成员测试和有界记录操作各计一单位，预言机调用单列为 $Q$。一个补入槽位的阈值计算、临时编辑、价值读取及记录更新分别至多计 12、32、2、4；每个扫描 tick 计 6。长度为 $m$ 的行满足 $\mathrm{ticks}\le4m+2(n+1)$，因此
+
+\[
+A_{\rm row}\le74m+12n+18.
+\]
+
+对一个可行种子，缓存建路、从排序表删除种子并复制、终止值处理及种子控制分别至多计 $26n^2+15n+2$、$6n+1$、2、25。它至多调度 $n-1$ 个非空行，总槽位数为 $N_a$，所以
+
+\[
+\begin{aligned}
+A_a&\le(26n^2+15n+2)+(6n+1)+2
+       +74N_a+(n-1)(12n+18)+25\\
+   &=75n^2-10n+12.
+\end{aligned}
+\]
+
+再计入每个种子至多 $2n+6$ 的输出复制费用、全局准备的 $20(n+1)$、排序的 $4(n^2+n+1)$，以及每个种子 4 单位的筛选与合并费用。按所有种子均触发上界作保守求和，得到
+
+\begin{equation}
+\boxed{A(n)\le75n^3-4n^2+46n+24.}
+\tag{12.3}
+\end{equation}
+
+Lean 中使用等价的自然数形式 $A(n)+4n^2\le75n^3+46n+24$，以避免截断减法；当 $n\ge1$ 时，它推出 $A(n)\le141n^3$。
+
+\textbf{峰值空间界。} 模型中每个精确实数、下标、布尔位或指针占一个抽象 RAM 字，数组表头另计两字。输入与全局状态常驻 $4n+28$ 字；排序临时区占 $3n+4$ 字；当前种子的前缀缓存占 $n^2+3n+7$ 字。建路或补入工作区至多占 $n+22$ 字，其中排序表为 $n+1$、最佳与终止值为 5、行寄存器为 16。行记录即时消费，独立输出数组已计入常驻状态。按阶段取峰值，并在分配与释放事件的每个前缀检查占用量，得到
+
+\begin{equation}
+\begin{aligned}
+P(n)&\le4n+28+\max\{3n+4,\ n^2+3n+7+(n+22)\}\\
+&\le\boxed{n^2+8n+57}\le66n^2\qquad(n\ge1).
+\end{aligned}
+\tag{12.4}
+\end{equation}
+
+$n=0$ 时不处理任何种子，完整多项式界仍成立。Lean 的联合定理把输出可行性、价值等价、精确近似保证以及 (12.2)–(12.4) 的资源界合并为一个结论。上述资源界只针对所定义的抽象 RAM 计费；预言机内部开销、整集合序列化、数值位复杂度和 Lean 求值器堆另计。定理证毕。
+
+
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}

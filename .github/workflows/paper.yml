@@ -1,0 +1,27 @@
+name: LaTeX source check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      # Compile the Chinese manuscript and its BibTeX references for checking.
+      # The generated PDF is a CI byproduct and is not committed or uploaded.
+      - name: Compile paper with XeLaTeX and BibTeX
+        uses: xu-cheng/latex-action@v4
+        with:
+          root_file: paper.tex
+          latexmk_use_xelatex: true
+          os: debian
+          texlive_version: 2026

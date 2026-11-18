@@ -1,0 +1,73 @@
+S2R：单点种子与二元补入的次模优化证明
+======================================
+
+作者：LINHAI LU
+
+本仓库提供一份中文 LaTeX 研究手稿、BibTeX 参考文献，以及 Lean 4 形式化证明。
+主稿源文件为 paper.tex；短证明路线图已合并到主稿开头；文献条目在
+references.bib。仓库只保存源文件，不保存参考论文的 PDF 副本或本稿编译
+出的 PDF。
+reference_pdfs/ 是可选的本地文献核对目录，已被 .gitignore 排除；
+其中的第三方 PDF 与来源记录不属于公开仓库。references.bib 收录并在正文引用
+22 篇文献；每篇有一份本地可打开的 PDF。来源、版本、版权限制和文件哈希见
+reference_pdfs/ 内的 SOURCES.txt、CLASSIC_RESEARCH.txt 与 MODERN_RESEARCH.txt；
+文献 DOI 或网页入口见 references.bib。
+
+主结果与适用范围
+----------------
+在非负、单调、归一化的次模函数和单背包约束下，S2R 使用单点种子、可行
+边际密度贪心路径与至多二元补入。Lean 联合定理
+S2R.Instance.s2r_verified_streaming 给出可行输出、价值对应与精确
+1-1/e 近似保证。n>=1 时，价值查询 Q(n)<=n^3；在指定的精确实数单位
+成本 RAM 模型中，辅助操作 A(n)<=141n^3、峰值空间 P(n)<=66n^2 个抽象字。
+预言机内部开销、整集合序列化、数值位复杂度及 Lean 求值器的内存另计。
+完整假设、算法、证明与已有工作的比较见 paper.tex。
+
+文件入口
+--------
+paper.tex                        主稿、证明路线图及数学证明
+references.bib                   正式参考文献
+verification/S2R/All.lean        Lean 证明导入入口
+verification/S2R/StreamingComplexity.lean  联合主定理
+verification/FORMALIZATION_STATUS  定理范围、模块对应与核验边界
+verification/README             构建及审计说明
+CITATION.cff                     仓库引用信息
+LICENSE                          授权范围
+
+编译论文（需要 TeX Live 或 MiKTeX，并安装 ctex、XeLaTeX 与 BibTeX）
+-----------------------------------------------
+在仓库根目录运行：
+
+  xelatex paper.tex
+  bibtex paper
+  xelatex paper.tex
+  xelatex paper.tex
+
+生成的 paper.pdf 供本地阅读，属于可重建产物，不纳入源码仓库。
+GitHub Actions 的 paper.yml 也只检查能否编译，不保存生成的 PDF。
+2026 年 11 月 13 日本机以 XeLaTeX、BibTeX 完整编译通过，文末解析出
+22 条参考文献；排版检查后已移除生成的 PDF。
+
+复核 Lean 证明
+--------------
+安装 Git、Python 3 和 elan/Lean 后，在仓库根目录运行：
+
+  cd verification
+  lake exe cache get
+  lake build
+  python -B verify_s2r.py
+
+lean-toolchain 固定 Lean 4.19.0；lakefile.toml 与 lake-manifest.json 固定
+Mathlib 及依赖。脚本重新编译主结果、审计公理并用 --trust=0 复核导入。
+2026 年 11 月 13 日使用已下载的 Lean/Mathlib 在本地离线重编译并审计了
+43 个模块、543 个定理，结果为 COMPLETE，--trust=0 导入复核通过；当前
+paper.tex、references.bib 与 Lean 源码哈希匹配该次报告。此本地模式不核查
+干净环境能否重新获取依赖；未来公开提交仍须以同一提交的 CI 结果为准。
+形式化核验、新颖性判断和外部学术审阅各有不同范围。
+
+授权与致谢
+----------
+自有代码和构建说明采用 MIT；paper.tex 与 references.bib 采用 CC BY 4.0。具体文件范围见
+LICENSE。作者报告曾在项目工作中使用 MIMO 2.6、GLM5.3、DeepSeek v4.1
+Flash、OpenAI 6 Sol 和 OpenAI 6 Astra 进行 AI 辅助。模型不列为作者；
+研究陈述、代码及发布内容由 LINHAI LU 核对。

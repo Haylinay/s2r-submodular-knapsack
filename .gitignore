@@ -1,0 +1,27 @@
+# Local toolchains and downloaded dependencies
+/verification/tools/
+/verification/.lake/
+/reference_pdfs/
+
+# Rebuildable Lean and audit outputs
+/verification/audit/
+*.olean
+*.ilean
+*.trace
+
+# Python caches and local files
+__pycache__/
+*.py[cod]
+
+# LaTeX build products (the repository keeps sources only)
+/paper.pdf
+/paper.aux
+/paper.bbl
+/paper.blg
+/paper.log
+/paper.out
+/paper.toc
+/paper.fls
+/paper.fdb_latexmk
+/paper.synctex.gz
+/paper.xdv
