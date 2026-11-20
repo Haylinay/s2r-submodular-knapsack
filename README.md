@@ -1,8 +1,9 @@
 # S2R · AI 辅助的次模背包优化探索
 
-[中文](#中文) · [English](#english)
+点击语言标题切换 / Select a language below.
 
-## 中文
+<details name="language" open>
+<summary>中文</summary>
 
 > **研究状态：探索性工作稿，数学结论尚未得到独立确认，可能存在错误。** 这里公开候选思路、论文草稿和 Lean 源码，供读者检查与讨论。请勿把草稿中的近似比或复杂度界当作已经确立的结果。
 
@@ -38,7 +39,10 @@ python -B verify_s2r.py
 
 作者为 **LINHAI LU**。项目曾使用 MIMO 2.6、GLM5.3、DeepSeek v4.1 Flash、OpenAI 6 Sol 和 OpenAI 6 Astra 辅助研究与写作；模型不是作者。授权范围见 [LICENSE](LICENSE)，引用信息见 [CITATION.cff](CITATION.cff)。
 
-## English
+</details>
+
+<details name="language">
+<summary>English</summary>
 
 > **Status: exploratory working draft. The mathematical claims have not been independently validated and may contain errors.** We share a candidate idea, a manuscript draft, and Lean source for inspection and discussion. The approximation and complexity bounds in the draft should not be treated as established results.
 
@@ -73,3 +77,5 @@ python -B verify_s2r.py
 The manuscript can be compiled from source with XeLaTeX and BibTeX. PDFs, downloaded papers, and build caches stay local and are excluded from Git.
 
 The author is **LINHAI LU**. MIMO 2.6, GLM5.3, DeepSeek v4.1 Flash, OpenAI 6 Sol, and OpenAI 6 Astra assisted the research and writing; the models are not authors. See [LICENSE](LICENSE) for licensing and [CITATION.cff](CITATION.cff) for citation information.
+
+</details>
