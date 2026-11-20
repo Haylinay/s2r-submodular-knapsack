@@ -18,13 +18,11 @@ $$
 \sum_{i\in S} c_i \le B.
 $$
 
-The cost limit in this formula is called a *single knapsack constraint* in optimization research. “Single” means that all selected items share one total budget.
-
 The report assumes $f(\varnothing)=0$. Monotonicity means that selecting more items cannot reduce value. Submodularity means diminishing returns: an item contributes no more when added to a larger selected set than when added to a smaller one. These assumptions make greedy choices worth studying, but the budget still makes the optimization problem difficult.
 
 [Budgeted maximum coverage](https://www.sciencedirect.com/science/article/pii/S0020019099000319) is a useful example. Suppose each available item covers a group of objects and has a cost. We want to cover as many objects as possible without exceeding the budget. Once several groups have been selected, another group may add fewer *new* objects because of overlap. This is a special case of the model above and is NP-hard.
 
-Approximation algorithms address this difficulty by seeking a feasible set whose value can be compared with the optimum. [Earlier work on the single-knapsack problem](https://www.sciencedirect.com/science/article/pii/S0167637703000622) already gives a $1-1/e$ approximation guarantee. The course report asks a narrower question: does the particular S2R construction below satisfy the same guarantee, and can its query, operation, and workspace costs be accounted for as proposed? The proposed argument has not been independently confirmed. The full bibliography is in [references.bib](references.bib).
+Approximation algorithms address this difficulty by seeking a feasible set whose value can be compared with the optimum. [Earlier work on this problem](https://www.sciencedirect.com/science/article/pii/S0167637703000622) already gives a $1-1/e$ approximation guarantee. The course report asks a narrower question: does the particular S2R construction below satisfy the same guarantee, and can its query, operation, and workspace costs be accounted for as proposed? The proposed argument has not been independently confirmed. The full bibliography is in [references.bib](references.bib).
 
 The report uses a **value-oracle model**: it counts requests for $f(S)$ while leaving the internal cost of evaluating $f$ outside the accounting. This lets the analysis focus on how many evaluations the algorithm requests. Any concrete application would need its own value function and cost model.
 
