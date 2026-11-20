@@ -44,7 +44,6 @@ LICENSE                          授权范围
   xelatex paper.tex
 
 生成的 paper.pdf 供本地阅读，属于可重建产物，不纳入源码仓库。
-GitHub Actions 的 paper.yml 也只检查能否编译，不保存生成的 PDF。
 2026 年 11 月 13 日本机以 XeLaTeX、BibTeX 完整编译通过，文末解析出
 22 条参考文献；排版检查后已移除生成的 PDF。
 
