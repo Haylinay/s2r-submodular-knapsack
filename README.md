@@ -1,4 +1,4 @@
-<h1 align="center">S2R: Submodular Knapsack Exploration</h1>
+<h1 align="center">S2R: Monotone Submodular Maximization under a Knapsack Constraint</h1>
 
 <p align="center">An exploratory course report on AI-assisted mathematical research</p>
 
