@@ -1,30 +1,86 @@
 <h1 align="center">S2R：单背包次模优化探索</h1>
 
+<p align="center">一份关于 AI 辅助数学研究的探索性课程报告</p>
+
 <p align="center">
   <a href="https://github.com/Haylinay/s2r-submodular-knapsack/blob/main/README.md">English</a> · <strong>简体中文</strong>
 </p>
 
 ## 项目背景
 
-本仓库源于一篇课程报告。随着 AI 与数学研究的联系日益紧密，我们选取一个具体的 NP 难优化问题，尝试了解 AI 能否帮助提出算法思路、梳理证明，并把部分论证写成可检查的形式。仓库记录了这次尝试的材料，也留下了需要继续核查的问题。
+本仓库始于一篇课程报告。随着 AI 与数学研究的联系日益紧密，我们选取一个已有丰富研究成果的 NP 难组合优化问题，尝试回答一个具体问题：AI 能否帮助提出算法思路、梳理数学论证，并把其中一部分陈述写成可以核查的形式？仓库记录了这次尝试的文稿和代码，也保留了需要继续审查的问题。
 
-研究对象是单背包约束下的单调次模最大化。每个元素有一定成本，目标是在总预算内选出价值尽可能高的集合。次模性描述边际收益递减：已选集合越大，同一个元素带来的新增收益不会增加。例如，在预算最大覆盖问题中，先选的元素越多，后来加入一个元素通常能新增覆盖的对象就越少。预算最大覆盖是这一模型的特例，也说明精确求解具有 NP 难性。
+研究对象是**单背包约束下的单调次模最大化**。给定有限元素集合 $V$、每个元素的正成本 $c_i$、预算 $B\ge0$ 和集合价值函数 $f$，需要在预算范围内选出价值最高的集合：
 
-已有研究为这一问题给出了 $1-1/e$ 近似算法。本报告围绕 S2R 这条具体的候选规则，考察它能否达到相同的近似比，以及文稿提出的价值查询次数、辅助操作次数和工作空间界能否成立。这些分析仍需独立复核。
+$$
+\max_{S\subseteq V} f(S)
+\qquad \text{s.t.} \qquad
+\sum_{i\in S}c_i\le B.
+$$
+
+文稿假设 $f(\varnothing)=0$。“单调”表示增加元素不会降低价值；“次模”表示边际收益递减，即同一元素加入较大集合时产生的新增价值，不会高于它加入较小集合时的新增价值。这些条件使贪心选择值得研究，但预算约束仍让精确优化变得困难。
+
+[预算最大覆盖](https://www.sciencedirect.com/science/article/pii/S0020019099000319)提供了一个直观例子：每个可选集合都有成本，我们希望在预算内覆盖尽可能多的对象。如果几个集合覆盖了相同对象，后加入的集合通常只能增加少量尚未覆盖的对象。这正是边际收益递减。预算最大覆盖是上述模型的特例，并且是 NP 难问题。
+
+面对这类问题，近似算法试图找到一个可行集合，并分析它的价值与最优值之间的关系。[已有的单背包次模优化研究](https://www.sciencedirect.com/science/article/pii/S0167637703000622)给出了 $1-1/e$ 近似保证。本课程报告关心一个更具体的问题：文稿中的 S2R 候选算法能否达到相同保证？它需要多少次价值查询、多少辅助操作和多少工作空间？文稿提出了一条可能的分析路线，结论仍需独立复核。完整的引用信息见 [references.bib](references.bib)。
+
+文稿采用**价值预言机模型**：算法通过查询取得 $f(S)$，计数时不包括预言机内部的计算成本。因此，价值查询次数是一项单独的资源指标。仓库目前没有针对具体数据集实现价值函数；如要用于实际问题，还需确定价值函数及其计算成本。
 
 ## 项目目标
 
-项目希望把 S2R 的步骤写清楚，方便逐项检查：枚举可行的单点种子，从每个种子出发运行可行的边际密度贪心；在贪心路径的真实前缀上，再尝试补入至多两个元素。文稿给出了候选的近似分析和资源计费过程，读者可以据此检查每一步使用了哪些假设。资源界采用文稿规定的抽象计费模型，并非实机运行时间的测量结果。
+**把候选算法说清楚。** [paper.tex](paper.tex) 中的 S2R 按以下方式生成候选集合：
 
-仓库还提供 Lean 源码，用来表达部分定义和数学陈述。读者可以对照文稿与 Lean 中的条件、结论和证明依赖，寻找可能的漏洞或反例。我们希望这些材料有助于继续讨论和修改这条思路。
+1. 把空集列为候选，并枚举每个满足预算的单点种子。
+2. 从每个种子出发，每一步只考虑当前仍能加入的元素，选择“新增价值 ÷ 元素成本”最大的一个。平局按固定顺序处理；只要还有可加入的元素，即使最大边际收益为零，路径也继续延伸。
+3. 检查贪心路径上**实际出现的每个前缀**。对每个前缀，考察补入零个、一个或两个元素后仍不超预算的候选；补入之后不重新运行贪心。
+4. 在生成的可行候选中，输出价值最高的集合。
 
-项目也借这个具体难题观察 AI 可以怎样辅助数学研究，以及哪些地方仍需要独立审查。这是一份探索性的课程报告；文稿中的数学主张尚未得到独立确认，可能存在错误。Lean 构建通过只说明源码中写出的陈述在其假设下通过了检查，不能单独保证形式化模型与原问题完全一致，也不能证明结论具有新颖性。
+这里的“真实前缀”是贪心路径实际到达的集合。文稿后面使用的连续插值只用于证明，不会产生新的算法候选。区分算法步骤与分析工具，是检查证明和资源计数的基础。
+
+**检查文稿提出的数学与资源主张。** 文稿尝试论证 S2R 的输出价值至少为最优值的 $1-1/e$。对于元素数 $n\ge1$ 的情形，它还给出了以下待复核的资源界：
+
+| 文稿提出的界 | 所计量的内容 |
+| --- | --- |
+| $Q\le n^3$ | 对价值函数的预言机查询次数 |
+| $A\le141n^3$ | 指定计费模型中的辅助操作次数 |
+| $P\le66n^2$ | 以抽象字为单位的峰值工作空间 |
+
+这些数值是**尚未得到独立确认的工作主张**，可能存在错误。资源计数采用文稿规定的精确实数、单位成本 RAM 模型，不是实机运行时间或实际内存占用的测量。预言机内部开销、数值位复杂度、整集合序列化和 Lean 求值器堆等也不包含在这些界中。资源分析还说明如何通过候选压缩和逐行扫描控制中间结果的存储。
+
+**让关键陈述能够逐项对照。** Lean 工程把问题模型、部分算法构造、近似陈述，以及输出可行性、价值和资源界的联合陈述写成形式化源码。核查脚本检查指定声明及其公理依赖。读者可以据此确认形式化文件中究竟写了哪些条件和结论，再与文稿逐项比较。
+
+这个项目还希望借具体难题观察 AI 能如何辅助数学研究，以及独立审查应放在哪些环节。这是一份探索性的课程报告；其中的数学主张尚未经过独立验证，可能存在错误。Lean 构建通过说明源码中的形式化陈述在其定义和假设下通过了检查，但不能单独保证形式化模型、S2R 的原意与文稿的自然语言论证完全一致，也不能据此判断研究的新颖性。对数学推导和已有文献的核查仍然必要。
 
 ## 如何使用这个仓库
 
-1. **阅读文稿。** [paper.tex](paper.tex) 是中文报告源码，开头介绍背景与证明路线，后续章节给出候选算法和资源分析；[references.bib](references.bib) 列出引用文献。若要在本地生成 PDF，请安装支持中文的 TeX 发行版、XeLaTeX 和 BibTeX，在仓库根目录依次运行 `xelatex paper.tex`、`bibtex paper`，再运行两次 `xelatex paper.tex`。
-2. **对照形式化陈述。** [verification/S2R.lean](verification/S2R.lean) 是 Lean 工程入口；[verification/S2R/Main.lean](verification/S2R/Main.lean) 包含近似陈述，[verification/S2R/StreamingComplexity.lean](verification/S2R/StreamingComplexity.lean) 包含输出与资源界的联合陈述。建议逐项比较源码与文稿中的定义、假设和结论。
-3. **复现本地核查。** 安装 Git、Python 3 和 elan/Lean 后，从仓库根目录运行：
+建议按照“理解问题—追踪算法—对照形式化陈述—复现核查”的顺序阅读。主要文件如下：
+
+| 文件 | 内容与用途 |
+| --- | --- |
+| [paper.tex](paper.tex) | 中文课程报告，包含问题定义、已有工作、证明路线图、S2R 规则和候选资源分析 |
+| [references.bib](references.bib) | 报告引用的文献条目 |
+| [verification/S2R.lean](verification/S2R.lean) | Lean 工程入口 |
+| [verification/S2R/Basic.lean](verification/S2R/Basic.lean) | 有限集合模型、成本、可行性和价值函数的假设 |
+| [verification/S2R/Algorithm.lean](verification/S2R/Algorithm.lean) | 形式化工程使用的算法定义 |
+| [verification/S2R/Main.lean](verification/S2R/Main.lean) | 近似保证的形式化陈述 |
+| [verification/S2R/StreamingComplexity.lean](verification/S2R/StreamingComplexity.lean) | 输出性质、近似保证、查询、操作和空间界的联合陈述 |
+| [verification/verify_s2r.py](verification/verify_s2r.py) | 指定结果及其公理依赖的本地构建与核查脚本 |
+| [.github/workflows/lean.yml](.github/workflows/lean.yml) | 在 GitHub Actions 中运行 Lean 构建与核查的配置 |
+
+**1. 阅读报告。** 先看 [paper.tex](paper.tex) 的摘要、背景和证明路线图，了解报告试图回答什么问题。第 1 节给出模型和算法定义；后续章节展开候选近似论证；第 12 节解释候选压缩和资源计数。阅读 [references.bib](references.bib) 时，要区分文献已有的近似结果和本报告针对 S2R 提出的主张。
+
+仓库保留 LaTeX 与 BibTeX 源码，不提交编译生成的 PDF。若需本地编译，请安装带中文支持的 TeX 发行版、XeLaTeX 与 BibTeX，在仓库根目录运行：
+
+```bash
+xelatex paper.tex
+bibtex paper
+xelatex paper.tex
+xelatex paper.tex
+```
+
+**2. 对照形式化陈述。** 从 [verification/S2R.lean](verification/S2R.lean) 查看工程的导入入口；阅读 [verification/S2R/Basic.lean](verification/S2R/Basic.lean) 中的实例假设、[verification/S2R/Algorithm.lean](verification/S2R/Algorithm.lean) 中的算法对象，再查看 [verification/S2R/Main.lean](verification/S2R/Main.lean) 的近似定理与 [verification/S2R/StreamingComplexity.lean](verification/S2R/StreamingComplexity.lean) 的联合定理。重点比较两边对可行集合、贪心前缀、二元补入和资源计数的定义是否一致。
+
+**3. 复现本地核查。** 安装 Git、Python 3，并通过 elan 安装 Lean/Lake。Lean 与 Mathlib 的版本记录在 [verification/lean-toolchain](verification/lean-toolchain) 和 [verification/lake-manifest.json](verification/lake-manifest.json) 中。然后从仓库根目录运行：
 
 ```bash
 cd verification
@@ -33,4 +89,6 @@ lake build
 python -B verify_s2r.py
 ```
 
-核查脚本会在 `verification/audit/` 下生成本地报告，检查其中列出的 Lean 声明及其公理依赖。核查结果只覆盖脚本指定的形式化内容，仍需有人检查文稿论证与形式化模型是否对应。本仓库没有数据集或实测性能实验。
+脚本会在 `verification/audit/` 中生成本地报告和日志。该目录、下载的依赖和生成的 PDF 均不进入 Git 仓库。[GitHub Actions 配置](.github/workflows/lean.yml) 会在仓库更新时运行相应的 Lean 构建与审计。
+
+**4. 理解核查结果。** 审计状态只说明脚本列出的声明和公理依赖完成了相应检查；即使报告显示 `COMPLETE`，其含义也限于这些项目。评估数学主张时，还应检查自然语言算法是否与 Lean 对象相同、每一步引理是否满足所需前提、资源计数是否覆盖了声称的操作，以及是否存在反例。本仓库没有数据集、性能基准或实测实验可供复现。
