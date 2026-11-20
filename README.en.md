@@ -1,6 +1,6 @@
 # S2R · AI-assisted exploration of submodular knapsack
 
-**Language / 语言：[简体中文](./README.md) · English**
+**Language / 语言：[简体中文](https://github.com/Haylinay/s2r-submodular-knapsack/blob/main/README.md) · English**
 
 > **Status: exploratory working draft. The mathematical claims have not been independently validated and may contain errors.** We share a candidate idea, a manuscript draft, and Lean source for inspection and discussion. The approximation and complexity bounds in the draft should not be treated as established results.
 

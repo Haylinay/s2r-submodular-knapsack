@@ -1,6 +1,6 @@
 # S2R · AI 辅助的次模背包优化探索
 
-**语言 / Language：简体中文 · [English](./README.en.md)**
+**语言 / Language：简体中文 · [English](https://github.com/Haylinay/s2r-submodular-knapsack/blob/main/README.en.md)**
 
 > **研究状态：探索性工作稿，数学结论尚未得到独立确认，可能存在错误。** 这里公开候选思路、论文草稿和 Lean 源码，供读者检查与讨论。请勿把草稿中的近似比或复杂度界当作已经确立的结果。
 
