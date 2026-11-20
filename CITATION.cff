@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this research project, please cite this repository."
-title: "单点种子、二元补入算法：精确 1−1/e 保证与抽象 RAM 三次界"
+title: "单调次模背包优化的 AI 辅助探索：单点种子与二元补入"
 authors:
   - family-names: Lu
     given-names: Linhai
