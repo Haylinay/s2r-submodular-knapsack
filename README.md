@@ -1,4 +1,4 @@
-<h1 align="center">S2R: Monotone Submodular Maximization under a Knapsack Constraint</h1>
+<h1 align="center">S2R: Monotone Submodular Maximization with a Budget</h1>
 
 <p align="center">An exploratory course report on AI-assisted mathematical research</p>
 
@@ -10,13 +10,15 @@
 
 This repository began as a course-report experiment at the intersection of AI and mathematics. We chose a well-studied NP-hard optimization problem to ask a concrete question: can AI help formulate an algorithmic idea, organize a mathematical argument, and make parts of that argument precise enough to check? The manuscript and Lean files make the proposed reasoning available for scrutiny.
 
-The problem is **monotone submodular maximization under one knapsack constraint**. Given a finite set of items $V$, a value function $f$, a positive cost $c_i$ for each item, and a budget $B\ge 0$, we seek
+The problem is **monotone submodular maximization with one budget**. Given a finite set of items $V$, a value function $f$, a positive cost $c_i$ for each item, and a budget $B\ge 0$, we seek
 
 $$
 \max_{S\subseteq V} f(S)
 \qquad \text{subject to} \qquad
 \sum_{i\in S} c_i \le B.
 $$
+
+The cost limit in this formula is called a *single knapsack constraint* in optimization research. “Single” means that all selected items share one total budget.
 
 The report assumes $f(\varnothing)=0$. Monotonicity means that selecting more items cannot reduce value. Submodularity means diminishing returns: an item contributes no more when added to a larger selected set than when added to a smaller one. These assumptions make greedy choices worth studying, but the budget still makes the optimization problem difficult.
 
