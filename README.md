@@ -6,6 +6,8 @@
   <strong>English</strong> · <a href="https://github.com/Haylinay/s2r-submodular-knapsack/blob/main/README.zh-CN.md">简体中文</a>
 </p>
 
+> **For reference and independent scrutiny only. This repository records an exploratory course report. The proposed proof, approximation guarantee, and resource bounds have not been independently validated and may be wrong. The correspondence between the manuscript and Lean formalization also requires independent review; a successful Lean build or audit checks only the statements encoded in the source. We do not recommend that anyone use this project as a basis for further research, implementations, applications, or other work.**
+
 ## Background
 
 This repository began as a course-report experiment at the intersection of AI and mathematics. We chose a well-studied NP-hard optimization problem to ask a concrete question: can AI help formulate an algorithmic idea, organize a mathematical argument, and make parts of that argument precise enough to check? The manuscript and Lean files make the proposed reasoning available for scrutiny.
