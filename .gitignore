@@ -2,6 +2,7 @@
 /verification/tools/
 /verification/.lake/
 /reference_pdfs/
+*.pdf
 
 # Rebuildable Lean and audit outputs
 /verification/audit/
@@ -14,14 +15,13 @@ __pycache__/
 *.py[cod]
 
 # LaTeX build products (the repository keeps sources only)
-/paper.pdf
-/paper.aux
-/paper.bbl
-/paper.blg
-/paper.log
-/paper.out
-/paper.toc
-/paper.fls
-/paper.fdb_latexmk
-/paper.synctex.gz
-/paper.xdv
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.xdv
