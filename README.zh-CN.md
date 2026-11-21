@@ -59,7 +59,7 @@ $$
 
 | 文件 | 内容与用途 |
 | --- | --- |
-| [paper.tex](paper.tex) | 中文研究文稿，包含问题定义、已有工作、证明路线图、S2R 规则和候选资源分析 |
+| [paper.tex](paper.tex) | 英文研究文稿，包含问题定义、已有工作、证明路线图、S2R 规则和候选资源分析 |
 | [references.bib](references.bib) | 文稿引用的文献条目 |
 | [verification/S2R.lean](verification/S2R.lean) | Lean 工程入口 |
 | [verification/S2R/Basic.lean](verification/S2R/Basic.lean) | 有限集合模型、成本、可行性和价值函数的假设 |
@@ -71,7 +71,7 @@ $$
 
 **1. 阅读文稿。** 先看 [paper.tex](paper.tex) 的摘要、背景和证明路线图，了解文稿试图回答什么问题。第 1 节给出模型和算法定义；后续章节展开候选近似论证；第 12 节解释候选压缩和资源计数。阅读 [references.bib](references.bib) 时，要区分文献已有的近似结果和文稿针对 S2R 提出的主张。
 
-仓库保留 LaTeX 与 BibTeX 源码，不提交编译生成的 PDF。若需本地编译，请安装带中文支持的 TeX 发行版、XeLaTeX 与 BibTeX，在仓库根目录运行：
+仓库保留 LaTeX 与 BibTeX 源码，不提交编译生成的 PDF。若需本地编译，请安装带 XeLaTeX 和 BibTeX 的 TeX 发行版，在仓库根目录运行：
 
 ```bash
 xelatex paper.tex

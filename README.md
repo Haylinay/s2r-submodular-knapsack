@@ -3,7 +3,7 @@
 <p align="center">An exploratory mathematical research record</p>
 
 <p align="center">
-  <strong>English</strong> · <a href="https://github.com/Haylinay/s2r-submodular-knapsack/blob/main/README.zh-CN.md">简体中文</a>
+  <strong>English</strong> · <a href="https://github.com/Haylinay/s2r-submodular-knapsack/blob/main/README.zh-CN.md">Chinese</a>
 </p>
 
 > **For reference and independent scrutiny only. This repository is an exploratory research record. The proposed proof, approximation guarantee, and resource bounds have not been independently validated and may be wrong. The correspondence between the manuscript and Lean formalization also requires independent review; a successful Lean build or audit checks only the statements encoded in the source. We do not recommend that anyone use this project as a basis for further research, implementations, applications, or other work.**
@@ -59,7 +59,7 @@ A useful route is to understand the optimization problem, trace the candidate al
 
 | File | What it contains |
 | --- | --- |
-| [paper.tex](paper.tex) | Chinese research manuscript: problem, related work, proof roadmap, S2R rule, proposed analysis, and resource model |
+| [paper.tex](paper.tex) | English research manuscript: problem, related work, proof roadmap, S2R rule, proposed analysis, and resource model |
 | [references.bib](references.bib) | Bibliographic entries cited in the manuscript |
 | [verification/S2R.lean](verification/S2R.lean) | Entry point for the Lean development |
 | [verification/S2R/Basic.lean](verification/S2R/Basic.lean) | Finite-set model, costs, feasibility, and value-function assumptions |
@@ -71,7 +71,7 @@ A useful route is to understand the optimization problem, trace the candidate al
 
 **1. Read the manuscript.** Start with the abstract, background, and proof roadmap in [paper.tex](paper.tex). Section 1 defines the model and candidate algorithm; the later proof sections develop the proposed approximation argument; Section 12 describes candidate compression and resource accounting. Use [references.bib](references.bib) to trace earlier work separately from the S2R-specific claims.
 
-The repository keeps LaTeX and BibTeX source rather than a generated PDF. To compile a PDF locally, install a TeX distribution with Chinese support, XeLaTeX, and BibTeX, then run these commands from the repository root:
+The repository keeps LaTeX and BibTeX source rather than a generated PDF. To compile a PDF locally, install a TeX distribution with XeLaTeX and BibTeX, then run these commands from the repository root:
 
 ```bash
 xelatex paper.tex
